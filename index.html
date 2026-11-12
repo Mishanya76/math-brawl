@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Математический Браул — учимся считать играя</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <span class="logo-cube">+</span>
+      <span class="logo-name">Математический<em>БРАУЛ</em></span>
+    </div>
+    <nav class="nav">
+      <a href="#how">Как играть</a>
+      <a href="#features">Фишки</a>
+      <a href="#brawlers">Бойцы</a>
+    </nav>
+    <div class="coinbox" id="coinbox" title="Твои монеты">
+      <span class="coin coin-lg">🪙</span>
+      <b id="coinCount">0</b>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero" id="hero">
+    <div class="hero-decor" aria-hidden="true">
+      <span>1 2 3</span>
+      <span>+ − ×</span>
+      <span>7 8 9</span>
+      <span>= ?</span>
+      <span>4 5 6</span>
+    </div>
+    <div class="hero-inner">
+      <h1>Учимся считать,<br>как <span>победители!</span></h1>
+      <p>Складывай, вычитай двузначные и трёхзначные числа, тренируй таблицу умножения, зарабатывай монеты и собирай команду бойцов в стиле Браул Старс!</p>
+      <div class="hero-btns">
+        <a class="btn btn-big" href="#game">▶ Играть сейчас</a>
+        <a class="btn btn-ghost" href="#brawlers">Смотреть бойцов</a>
+      </div>
+      <div class="hero-metrics">
+        <div><b>250+</b><span>примеров</span></div>
+        <div><b>12</b><span>бойцов</span></div>
+        <div><b>3</b><span>уровня</span></div>
+        <div><b>∞</b><span>монет</span></div>
+      </div>
+    </div>
+    <div class="hero-cube" aria-hidden="true">
+      <div class="cube cube1">+</div>
+      <div class="cube cube2">8</div>
+      <div class="cube cube3">−</div>
+      <div class="cube cube4">?</div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <h2 class="band-title">Как играть</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-emoji">🧠</div>
+          <h3>Решай пример</h3>
+          <p>Складывай, вычитай или умножай. Выбирай правильный ответ из четырёх вариантов.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-emoji">🪙</div>
+          <h3>Получай монеты</h3>
+          <p>За каждый верный ответ — монеты. Отвечай подряд без ошибок и получай бонус за серию!</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-emoji">🦸</div>
+          <h3>Открывай бойцов</h3>
+          <p>Трать монеты на новых бойцов. Чем реже боец — тем больше монет он приносит за победу.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-dark" id="features">
+    <div class="wrap">
+      <h2 class="band-title">Почему это круто</h2>
+      <div class="features">
+        <div class="feature"><span class="f-ico">⚡</span><h3>Быстрый темп</h3><p>Короткие раунды по 10 примеров — не успеешь заскучать.</p></div>
+        <div class="feature"><span class="f-ico">🔥</span><h3>Серии и рекорды</h3><p>Цепочка верных ответов даёт горы монет. Ошибаешься — серия обнуляется.</p></div>
+        <div class="feature"><span class="f-ico">🎯</span><h3>Три уровня</h3><p>Выбери: двузначные числа, трёхзначные — или тренируй таблицу умножения!</p></div>
+        <div class="feature"><span class="f-ico">📊</span><h3>Умные ошибки</h3><p>Неверные ответы составлены так, чтобы ты запомнил, где ошибаешься.</p></div>
+        <div class="feature"><span class="f-ico">💾</span><h3>Прогресс в браузере</h3><p>Монеты и бойцы сохраняются автоматически — ничего не потеряется.</p></div>
+        <div class="feature"><span class="f-ico">🔊</span><h3>Звуки побед</h3><p>Верный ответ звенит монетой, а промах — дружелюбным «упс».</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="brawlers">
+    <div class="wrap">
+      <h2 class="band-title">Собери команду бойцов</h2>
+      <p class="band-sub">Каждый боец приносит бонус к монетам за верный ответ. Выбери своего любимчика — его мы поставим в игру!</p>
+
+      <div class="teamline" id="teamline">
+        <div class="teamline-title">Моя команда</div>
+        <div class="teamline-fighters" id="teamlineFighters"></div>
+      </div>
+
+      <div class="rarity-legend">
+        <span><i class="r r-common"></i>Обычные</span>
+        <span><i class="r r-rare"></i>Редкие</span>
+        <span><i class="r r-epic"></i>Эпические</span>
+        <span><i class="r r-legendary"></i>Легендарные</span>
+      </div>
+
+      <div class="brawler-grid" id="brawlerGrid"></div>
+    </div>
+  </section>
+
+  <section class="band band-game" id="game">
+    <div class="wrap">
+      <h2 class="band-title">Арена чисел</h2>
+
+      <div class="arena-buttons">
+        <div class="level-choice">
+          <button class="lvl lvl-active" data-level="two">Двузначные</button>
+          <button class="lvl" data-level="three">Трёхзначные</button>
+          <button class="lvl" data-level="mult">Таблица ×</button>
+        </div>
+        <button class="btn btn-play" id="startRound">▶ Новый раунд</button>
+      </div>
+
+      <div class="arena" id="arena">
+        <div class="arena-empty" id="arenaEmpty">
+          <div class="mascot-big" id="mascotEmpty">🐸</div>
+          <p>Нажми <b>«Новый раунд»</b>, чтобы сразиться с примерами!<br>10 вопросов — и горы монет у тебя в кармане.</p>
+        </div>
+      </div>
+
+      <div class="arena-stats" id="arenaStats"></div>
+      <div class="arena-result" id="arenaResult" hidden>
+        <div class="result-card">
+          <h3 id="resultTitle">Раунд пройден!</h3>
+          <p>Правильных ответов: <b id="resultCorrect">0</b> из 10</p>
+          <p>Лучшая серия: <b id="resultStreak">0</b> 🔥</p>
+          <p class="result-coins">Заработано: <b id="resultCoins">0</b> 🪙</p>
+          <button class="btn btn-big" id="againBtn">Играть ещё раз</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="logo">
+      <span class="logo-cube">+</span>
+      <span class="logo-name">Математический<em>БРАУЛ</em></span>
+    </div>
+    <p>Тренируй счёт каждый день — становись настоящим Королём Арифметики!</p>
+    <p class="footer-note">Сделано для маленьких математиков. 2 класс — и дальше!</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" hidden></div>
+<div class="coinburst" id="coinburst" hidden></div>
+
+<script src="script.js"></script>
+</body>
+</html>
