@@ -28,17 +28,26 @@ let state = loadState();
 let level = 'two';
 let round = null;
 
-function defaultState(){ return { coins:20, owned:['plus','minus'], selected:'plus', best:0 }; }
+function defaultSettings(){ return { sound:true, volume:70, vibration:true, showOptions:true }; }
+function defaultState(){ return { coins:20, owned:['plus','minus'], selected:'plus', best:0, settings: defaultSettings() }; }
 function loadState(){
   try{
     const raw = localStorage.getItem(KEY);
     if(!raw) return defaultState();
     const s = JSON.parse(raw);
-    s.owned = Array.isArray(s.owned) ? s.owned : ['plus','minus'];
-    if(!s.coins || isNaN(s.coins)) s.coins = 20;
+    const d = defaultState();
+    s.coins = (typeof s.coins === 'number' && !isNaN(s.coins)) ? s.coins : d.coins;
+    s.owned = Array.isArray(s.owned) ? s.owned : d.owned.slice();
     if(!s.owned.includes('plus')) s.owned.push('plus');
     if(!s.owned.includes('minus')) s.owned.push('minus');
-    if(!s.owned.includes(s.selected)) s.selected = 'plus';
+    s.selected = s.owned.includes(s.selected) ? s.selected : 'plus';
+    s.best = (typeof s.best === 'number') ? s.best : 0;
+    s.settings = Object.assign(defaultSettings(), s.settings || {});
+    s.settings.volume = Math.max(0, Math.min(100, Number(s.settings.volume)));
+    if(isNaN(s.settings.volume)) s.settings.volume = 70;
+    s.settings.sound = !!s.settings.sound;
+    s.settings.vibration = !!s.settings.vibration;
+    s.settings.showOptions = !!s.settings.showOptions;
     return s;
   }catch(e){ return defaultState(); }
 }
@@ -65,7 +74,122 @@ function genProblem(lvl){
     else                 { op='-'; a=randint(400,999); b=randint(150,a-150); }
   }
   if(ans === undefined) ans = op === '+' ? a+b : a-b;
-  return { text:`${a} ${op} ${b}`, ans, opts:genOptions(ans, extra) };
+  return { a, b, op, ans, text:`${a} ${op} ${b}`, opts:genOptions(ans, extra) };
+}
+
+function explainProblem(p){
+  if(p.op === '×') return explainMultiplication(p.a, p.b);
+  if(p.op === '+') return explainAddition(p.a, p.b);
+  return explainSubtraction(p.a, p.b);
+}
+function explainMultiplication(a,b){
+  const terms = Array(a).fill(b).join(' + ');
+  return `<div class="explain-title">Как решить:</div>${a} × ${b} — это ${a} раз по ${b}:\n<b>${a} × ${b} = ${terms} = ${a*b}</b>`;
+}
+function explainAddition(a,b){
+  const parts = [];
+  let h = Math.floor(b/100)*100;
+  let t = Math.floor((b%100)/10)*10;
+  let o = b%10;
+  if(h) parts.push(h);
+  if(t) parts.push(t);
+  if(o) parts.push(o);
+  if(parts.length <= 1){
+    // try to make a friendly split when crossing tens
+    const onesA = a%10, onesB = b%10;
+    if(onesA + onesB > 10 && b > 1 && b < 20){
+      const toTen = 10 - onesA;
+      if(toTen > 0 && toTen < b){
+        const rest = b - toTen;
+        return `<div class="explain-title">Как решить по шагам:</div>${a} + ${b} = ${a} + ${toTen} + ${rest} = ${a+toTen} + ${rest} = <b>${a+b}</b>`;
+      }
+    }
+    return `<div class="explain-title">Как решить:</div><b>${a} + ${b} = ${a+b}</b>`;
+  }
+  let cur = a;
+  let lines = [`${a} + ${b} = ${a} + ${parts.join(' + ')}`];
+  for(let i=0;i<parts.length;i++){
+    cur += parts[i];
+    if(i < parts.length-1) lines.push(`= ${cur} + ${parts.slice(i+1).join(' + ')}`);
+    else lines.push(`= <b>${cur}</b>`);
+  }
+  return `<div class="explain-title">Как решить по шагам:</div>` + lines.join('\n');
+}
+function explainSubtraction(a,b){
+  const A = String(a).split('').map(Number);
+  const B = String(b).padStart(A.length,'0').split('').map(Number);
+  const n = A.length;
+  const namesNom = ['единицы','десятки','сотни','тысячи'];
+  const namesAcc = ['единицу','десяток','сотню','тысячу'];
+  // detect if any borrow needed
+  let need = false;
+  {
+    let tmp = A.slice();
+    for(let i=n-1;i>=0;i--){
+      if(tmp[i] < B[i]){ need = true; break; }
+      // not fully rigorous but ok; better simulate
+    }
+    // simulate to be sure
+    tmp = A.slice();
+    need = false;
+    for(let i=n-1;i>=0;i--){
+      if(tmp[i] < B[i]){ need = true; let j=i-1; while(j>=0 && tmp[j]===0) j--; if(j>=0){ tmp[j]--; for(let k=j+1;k<i;k++) tmp[k]=9; tmp[i]+=10; } }
+      tmp[i] -= B[i];
+    }
+  }
+  // re-check properly
+  need = false;
+  {
+    let tmp = A.slice();
+    for(let i=n-1;i>=0;i--){
+      if(tmp[i] < B[i]){ need = true; break; }
+    }
+  }
+  if(!need){
+    // stepwise decomposition
+    const parts = [];
+    let h = Math.floor(b/100)*100;
+    let t = Math.floor((b%100)/10)*10;
+    let o = b%10;
+    if(h) parts.push(h); if(t) parts.push(t); if(o) parts.push(o);
+    if(parts.length <= 1) return `<div class="explain-title">Как решить:</div><b>${a} − ${b} = ${a-b}</b>`;
+    let cur = a; let lines=[`${a} − ${b} = ${a} − ${parts.join(' − ')}`];
+    for(let i=0;i<parts.length;i++){ cur -= parts[i]; if(i<parts.length-1) lines.push(`= ${cur} − ${parts.slice(i+1).join(' − ')}`); else lines.push(`= <b>${cur}</b>`); }
+    return `<div class="explain-title">Как решить по шагам:</div>` + lines.join('\n');
+  }
+  // borrow explanation
+  let d = A.slice();
+  let borrowedFrom = new Array(n).fill(false);
+  let steps = [];
+  for(let i=n-1;i>=0;i--){
+    let r = n-1-i;
+    let place = namesNom[r] || 'разряд';
+    let capPlace = place.charAt(0).toUpperCase()+place.slice(1);
+    let bot = B[i];
+    if(d[i] < bot){
+      let j=i-1;
+      while(j>=0 && d[j]===0){ j--; }
+      let oldVal = d[i];
+      if(j>=0){
+        let fromPlace = namesAcc[n-1-j] || 'разряд';
+        d[j] -= 1; borrowedFrom[j]=true;
+        for(let k=j+1;k<i;k++){ d[k]=9; borrowedFrom[k]=true; }
+        d[i] += 10;
+        if(j === i-1){
+          steps.push(`${capPlace}: ${oldVal} < ${bot}, занимаем 1 ${fromPlace} → ${d[i]} − ${bot} = ${d[i]-bot}.`);
+        } else {
+          steps.push(`${capPlace}: ${oldVal} < ${bot}, занимаем 1 ${fromPlace} (в середине стало 9) → ${d[i]} − ${bot} = ${d[i]-bot}.`);
+        }
+      }
+    } else {
+      if(borrowedFrom[i]){
+        steps.push(`${capPlace}: осталось ${d[i]}, ${d[i]} − ${bot} = ${d[i]-bot}.`);
+      } else {
+        steps.push(`${capPlace}: ${d[i]} − ${bot} = ${d[i]-bot}.`);
+      }
+    }
+  }
+  return `<div class="explain-title">Как решить с заёмом:</div>${steps.join('\n')}\n<b>Ответ: ${a-b}</b>`;
 }
 
 function genOptions(ans, extra){
@@ -94,14 +218,17 @@ function gainForAnswer(){
   return gain;
 }
 
-/* ---------- Audio ---------- */
+/* ---------- Audio & vibration ---------- */
 let audioCtx = null;
 function tone(freq, t, dur, type, vol){
   try{
+    if(!state.settings.sound) return;
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const master = Math.max(0, Math.min(1, (state.settings.volume ?? 70) / 100));
+    const base = (vol || 0.2) * master;
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.type = type || 'sine'; o.frequency.value = freq;
-    g.gain.setValueAtTime(vol || 0.2, audioCtx.currentTime + t);
+    g.gain.setValueAtTime(Math.max(0.0001, base), audioCtx.currentTime + t);
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + dur);
     o.connect(g); g.connect(audioCtx.destination);
     o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + dur + 0.02);
@@ -113,6 +240,7 @@ function sndCoin(){ tone(1318,0,.06,'square',.07); tone(1760,.05,.1,'square',.07
 function sndBuy(){ tone(523,0,.1); tone(659,.08,.1); tone(784,.16,.16); }
 function sndWin(){ tone(523,0,.12); tone(659,.12,.12); tone(784,.24,.12); tone(1046,.36,.3); }
 function sndFizzle(){ tone(440,0,.1); tone(330,.1,.14); }
+function vib(pattern){ try{ if(state.settings.vibration && navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 
 /* ---------- Toast & burst ---------- */
 let toastTimer = null;
@@ -238,7 +366,7 @@ function showIdle(){
 }
 function startRound(){
   if(round) return;
-  round = { level, index:0, correct:0, streak:0, bestStreak:0, earned:0, locked:false };
+  round = { level, index:0, correct:0, streak:0, bestStreak:0, earned:0, locked:false, advanceTimer:null };
   $('arenaResult').hidden = true;
   arena.innerHTML = `
     <div class="round-top">
@@ -253,23 +381,47 @@ function startRound(){
       <div class="mascot-small" id="mascotSmall"></div>
       <div class="problem" id="problem"></div>
     </div>
+    <div class="input-row" id="inputRow">
+      <input type="number" id="answerInput" inputmode="numeric" enterkeyhint="done" placeholder="Введи ответ" autocomplete="off">
+      <button class="btn-submit" id="submitAnswer">Ответить</button>
+    </div>
     <div class="answers" id="answers"></div>
-    <div class="feedback" id="feedback"></div>`;
-  $('quitRound').addEventListener('click', ()=>{ if(round && !round.locked) endRound(true); });
+    <div class="feedback" id="feedback"></div>
+    <div class="explain" id="explain" hidden></div>`;
+  $('quitRound').addEventListener('click', ()=>{ if(round) endRound(true); });
+  $('submitAnswer').addEventListener('click', submitTypedAnswer);
+  $('answerInput').addEventListener('keydown', (e)=>{ if(e.key === 'Enter') submitTypedAnswer(); });
   round.cur = genProblem(round.level);
   renderQuestion();
   sndCoin();
 }
+
+function submitTypedAnswer(){
+  if(!round || round.locked) return;
+  const inp = $('answerInput');
+  if(!inp) return;
+  const raw = inp.value.trim();
+  if(raw === ''){ toast('Введи число'); inp.focus(); return; }
+  const val = Number(raw);
+  if(Number.isNaN(val)){ toast('Введи число'); return; }
+  onAnswer(val, null);
+}
 function renderQuestion(){
   if(!round) return;
   round.locked = false;
+  if(round.advanceTimer){ clearTimeout(round.advanceTimer); round.advanceTimer = null; }
   const p = round.cur;
   $('qCount').textContent = `Вопрос ${round.index+1} / ${ROUND_LEN}`;
   $('roundCoin').textContent = `🪙 +${round.earned}`;
   $('problem').textContent = `${p.text} = ?`;
   $('feedback').innerHTML = '';
+  const ex = $('explain'); if(ex){ ex.hidden = true; ex.innerHTML = ''; }
+  const inp = $('answerInput');
+  if(inp){ inp.value = ''; inp.disabled = false; }
+  const sub = $('submitAnswer'); if(sub) sub.disabled = false;
   const an = $('answers');
   an.innerHTML = '';
+  an.hidden = !state.settings.showOptions;
   p.opts.forEach(v=>{
     const b = document.createElement('button');
     b.className = 'answer';
@@ -283,6 +435,9 @@ function renderQuestion(){
   m.style.background = `linear-gradient(135deg,#${gt(selectedBrawler().rarity)[0]},#${gt(selectedBrawler().rarity)[1]})`;
   renderProgress();
   renderStats();
+  if(inp && window.matchMedia && window.matchMedia('(pointer:fine)').matches){
+    try{ inp.focus({ preventScroll:true }); }catch(e){}
+  }
   window.scrollTo({ top:$('game').offsetTop - 80, behavior:'smooth' });
 }
 function gt(r){
@@ -308,41 +463,67 @@ function renderStats(){
 }
 function onAnswer(val, btn){
   if(!round || round.locked) return;
+  val = Number(val);
+  if(Number.isNaN(val)) return;
   round.locked = true;
   const p = round.cur;
+  const correct = (val === p.ans);
   document.querySelectorAll('.answer').forEach(x=>x.disabled=true);
+  const inp = $('answerInput'); if(inp) inp.disabled = true;
+  const sub = $('submitAnswer'); if(sub) sub.disabled = true;
   const correctBtn = [...document.querySelectorAll('.answer')].find(x=>+x.dataset.val === p.ans);
   const row = $('mascotRow');
   const fb = $('feedback');
-  if(val === p.ans){
-    btn.classList.add('ok');
+  const ex = $('explain');
+
+  if(correct){
+    if(btn) btn.classList.add('ok'); else if(correctBtn) correctBtn.classList.add('ok');
     round.correct++; round.streak++;
     round.bestStreak = Math.max(round.bestStreak, round.streak);
     const g = gainForAnswer();
     round.earned += g;
     row.classList.add('won');
     fb.innerHTML = `<span class="good">Верно! +${g} 🪙${round.streak>=3?` · серия ×${round.streak} 🔥`:''}</span>`;
+    if(ex){ ex.hidden = true; ex.innerHTML = ''; }
     sndCorrect();
+    vib(30);
     addCoins(g);
     coinBurst();
   } else {
-    btn.classList.add('bad');
+    if(btn) btn.classList.add('bad');
     if(correctBtn) correctBtn.classList.add('ok');
     round.streak = 0;
     row.classList.add('battling');
     fb.innerHTML = `<span class="bad">Ой! Правильный ответ — ${p.ans}</span>`;
+    if(ex){
+      ex.hidden = false;
+      ex.innerHTML = explainProblem(p) + `<br><button class="next-btn" id="nextBtn">Понятно, дальше →</button>`;
+      const nb = $('nextBtn'); if(nb) nb.addEventListener('click', ()=>advanceQuestion());
+    }
     sndWrong();
+    vib([40,30,40]);
   }
   round._res = round._res || [];
-  round._res.push(val === p.ans);
-  setTimeout(()=>{
-    row.classList.remove('won','battling');
-    round.index++;
-    if(round.index >= ROUND_LEN){ endRound(false); }
-    else { round.cur = genProblem(round.level); renderQuestion(); }
-  }, 950);
+  round._res.push(correct);
+  $('roundCoin').textContent = `🪙 +${round.earned}`;
+  renderStats();
+
+  const delay = correct ? 900 : 8000;
+  round.advanceTimer = setTimeout(()=>advanceQuestion(), delay);
+}
+
+function advanceQuestion(){
+  if(!round) return;
+  if(round.advanceTimer){ clearTimeout(round.advanceTimer); round.advanceTimer = null; }
+  const row = $('mascotRow');
+  if(row) row.classList.remove('won','battling');
+  round.index++;
+  if(round.index >= ROUND_LEN){ endRound(false); }
+  else { round.cur = genProblem(round.level); renderQuestion(); }
 }
 function endRound(quit){
+  if(!round) return;
+  if(round.advanceTimer){ clearTimeout(round.advanceTimer); round.advanceTimer = null; }
   const perfect = !quit && round.correct === ROUND_LEN;
   if(perfect){ round.earned += PERFECT_BONUS; }
 
@@ -360,14 +541,43 @@ function endRound(quit){
   showIdle();
   renderStatsClean();
 
-  if(perfect){ sndWin(); toast(`Идеально! Бонус +${PERFECT_BONUS} 🪙`); }
+  if(perfect){ sndWin(); vib([30,20,30,20,60]); toast(`Идеально! Бонус +${PERFECT_BONUS} 🪙`); }
   else if(quit && !r.correct){ toast('Ни одного ответа... Попробуй ещё раз!'); }
-  else { sndCoin(); toast(`Раунд окончен: +${r.earned} 🪙`); }
+  else { sndCoin(); vib(20); toast(`Раунд окончен: +${r.earned} 🪙`); }
   window.scrollTo({ top:$('game').offsetTop - 110, behavior:'smooth' });
 }
 function renderStatsClean(){
   $('arenaStats').innerHTML = '';
 }
+
+/* ---------- Settings ---------- */
+function openSettings(){
+  $('setSound').checked = !!state.settings.sound;
+  $('setVolume').value = state.settings.volume;
+  $('setVibration').checked = !!state.settings.vibration;
+  $('setShowOptions').checked = !!state.settings.showOptions;
+  $('settingsModal').hidden = false;
+}
+function closeSettings(){
+  $('settingsModal').hidden = true;
+}
+function applySettingsFromUI(){
+  state.settings.sound = $('setSound').checked;
+  state.settings.volume = Number($('setVolume').value);
+  state.settings.vibration = $('setVibration').checked;
+  state.settings.showOptions = $('setShowOptions').checked;
+  saveState();
+  // apply to current question if any
+  const an = $('answers'); if(an) an.hidden = !state.settings.showOptions;
+}
+
+$('settingsBtn').addEventListener('click', openSettings);
+$('settingsClose').addEventListener('click', closeSettings);
+$('settingsModal').addEventListener('click', (e)=>{ if(e.target === $('settingsModal')) closeSettings(); });
+['setSound','setVolume','setVibration','setShowOptions'].forEach(id=>{
+  $(id).addEventListener('change', applySettingsFromUI);
+  $(id).addEventListener('input', applySettingsFromUI);
+});
 
 /* ---------- Init ---------- */
 $('startRound').addEventListener('click', startRound);
@@ -387,3 +597,9 @@ renderCoins();
 renderLevel();
 renderShop();
 showIdle();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}

@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Математический Браул — учимся считать играя</title>
+<meta name="theme-color" content="#1c1140">
+<meta name="description" content="Игра для тренировки математики: сложение, вычитание и таблица умножения. Зарабатывай монеты и собирай бойцов!">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
@@ -21,9 +28,12 @@
       <a href="#features">Фишки</a>
       <a href="#brawlers">Бойцы</a>
     </nav>
-    <div class="coinbox" id="coinbox" title="Твои монеты">
-      <span class="coin coin-lg">🪙</span>
-      <b id="coinCount">0</b>
+    <div class="topbar-actions">
+      <button class="iconbtn" id="settingsBtn" title="Настройки" aria-label="Настройки">⚙️</button>
+      <div class="coinbox" id="coinbox" title="Твои монеты">
+        <span class="coin coin-lg">🪙</span>
+        <b id="coinCount">0</b>
+      </div>
     </div>
   </div>
 </header>
@@ -68,7 +78,7 @@
           <div class="step-num">1</div>
           <div class="step-emoji">🧠</div>
           <h3>Решай пример</h3>
-          <p>Складывай, вычитай или умножай. Выбирай правильный ответ из четырёх вариантов.</p>
+          <p>Складывай, вычитай или умножай. Выбери ответ из вариантов или введи его с клавиатуры.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
@@ -93,9 +103,9 @@
         <div class="feature"><span class="f-ico">⚡</span><h3>Быстрый темп</h3><p>Короткие раунды по 10 примеров — не успеешь заскучать.</p></div>
         <div class="feature"><span class="f-ico">🔥</span><h3>Серии и рекорды</h3><p>Цепочка верных ответов даёт горы монет. Ошибаешься — серия обнуляется.</p></div>
         <div class="feature"><span class="f-ico">🎯</span><h3>Три уровня</h3><p>Выбери: двузначные числа, трёхзначные — или тренируй таблицу умножения!</p></div>
-        <div class="feature"><span class="f-ico">📊</span><h3>Умные ошибки</h3><p>Неверные ответы составлены так, чтобы ты запомнил, где ошибаешься.</p></div>
-        <div class="feature"><span class="f-ico">💾</span><h3>Прогресс в браузере</h3><p>Монеты и бойцы сохраняются автоматически — ничего не потеряется.</p></div>
-        <div class="feature"><span class="f-ico">🔊</span><h3>Звуки побед</h3><p>Верный ответ звенит монетой, а промах — дружелюбным «упс».</p></div>
+        <div class="feature"><span class="f-ico">📊</span><h3>Разбор ошибок</h3><p>При ошибке покажем, как решить пример правильно — шаг за шагом.</p></div>
+        <div class="feature"><span class="f-ico">⌨️</span><h3>Ввод с клавиатуры</h3><p>Вводи ответ сам или выбирай из вариантов — как удобнее тренироваться.</p></div>
+        <div class="feature"><span class="f-ico">⚙️</span><h3>Настройки и офлайн</h3><p>Звук, вибрация и режим подсказок — настрой под себя. Игру можно установить на телефон.</p></div>
       </div>
     </div>
   </section>
@@ -168,7 +178,35 @@
 </footer>
 
 <div class="toast" id="toast" hidden></div>
-<div class="coinburst" id="coinburst" hidden></div>
+<div class="coinburst" id="coinburst" hidden>🪙</div>
+
+<div class="modal" id="settingsModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-head">
+      <h3 id="settingsTitle">Настройки</h3>
+      <button class="iconbtn iconbtn-sm" id="settingsClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="setting-row">
+        <span>Звук</span>
+        <input type="checkbox" id="setSound">
+      </label>
+      <label class="setting-row">
+        <span>Громкость</span>
+        <input type="range" id="setVolume" min="0" max="100" step="5">
+      </label>
+      <label class="setting-row">
+        <span>Вибрация</span>
+        <input type="checkbox" id="setVibration">
+      </label>
+      <label class="setting-row">
+        <span>Показывать варианты ответов</span>
+        <input type="checkbox" id="setShowOptions">
+      </label>
+      <p class="setting-hint">Варианты можно скрыть, чтобы тренироваться только вводом с клавиатуры.</p>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
